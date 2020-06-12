@@ -17,7 +17,7 @@ from tqdm import tqdm
 from utils.utils import xyxy2xywh, xywh2xyxy
 
 help_url = 'https://github.com/ultralytics/yolov3/wiki/Train-Custom-Data'
-img_formats = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.dng']
+img_formats = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.dng', '.npy']
 vid_formats = ['.mov', '.avi', '.mp4']
 
 # Get orientation exif tag
@@ -39,7 +39,11 @@ def exif_size(img):
         pass
 
     return s
-
+def open_im(path):
+    if(path.endswith(".npy")):
+        img = np.load(path)
+        return (img.shape[0], img.shape[1])
+    return exif_size(Image.open(path))
 
 class LoadImages:  # for inference
     def __init__(self, path, img_size=416):
@@ -300,7 +304,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     s = [x.split() for x in f.read().splitlines()]
                     assert len(s) == n, 'Shapefile out of sync'
             except:
-                s = [exif_size(Image.open(f)) for f in tqdm(self.img_files, desc='Reading image shapes')]
+                s = [open_im(f) for f in tqdm(self.img_files, desc='Reading image shapes')]
                 np.savetxt(sp, s, fmt='%g')  # overwrites existing (if any)
 
             # Sort by aspect ratio
@@ -378,7 +382,10 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 # Extract object detection boxes for a second stage classifier
                 if extract_bounding_boxes:
                     p = Path(self.img_files[i])
-                    img = cv2.imread(str(p))
+                    if(str(p).endswith(".npy")):
+                        img = np.load(str(p))
+                    else:
+                        img = cv2.imread(str(p))
                     h, w = img.shape[:2]
                     for j, x in enumerate(l):
                         f = '%s%sclassifier%s%g_%g_%s' % (p.parent.parent, os.sep, os.sep, x[0], j, p.name)
@@ -526,7 +533,10 @@ def load_image(self, index):
     img = self.imgs[index]
     if img is None:  # not cached
         path = self.img_files[index]
-        img = cv2.imread(path)  # BGR
+        if(path.endswith("npy")):
+            img = np.load(path)
+        else:
+            img = cv2.imread(path)  # BGR
         assert img is not None, 'Image Not Found ' + path
         h0, w0 = img.shape[:2]  # orig hw
         r = self.img_size / max(h0, w0)  # resize image to img_size

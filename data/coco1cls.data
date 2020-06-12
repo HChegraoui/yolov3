@@ -1,4 +1,4 @@
 classes=1
-train=data/coco1cls.txt
-valid=data/coco1cls.txt
-names=data/coco.names
+train=/neurospin/radiomics/workspace_biomede/tests/yolov3_input/imgs.txt
+valid=/neurospin/radiomics/workspace_biomede/tests/yolov3_input/valid.txt
+names=data/tum.names
